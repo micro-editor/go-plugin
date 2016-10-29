@@ -37,21 +37,35 @@ function gofmt()
 end
 
 function gorename()
+    local res, canceled = messenger:Prompt("Rename to:", "", 0)
+    if not canceled then
+        gorenameCmd(res)
+        CurView():Save(false)
+    end
+end
+
+function gorenameCmd(res)
     CurView():Save(false)
     local v = CurView()
     local c = v.Cursor
     local buf = v.Buf
     local loc = Loc(c.X, c.Y)
     local offset = ByteOffset(loc, buf)
-    local res = messenger:Prompt("Rename to:", "", 0)
-    local handle = io.popen("gorename --offset " .. CurView().Buf.Path .. ":#" .. tostring(offset) .. " --to " .. res)
-
-    local result = handle:read("*a")
-    handle:close()
-
-    CurView():ReOpen()
+    if #res > 0 then
+        local cmd = "gorename --offset " .. CurView().Buf.Path .. ":#" .. tostring(offset) .. " --to " .. res
+        JobStart(cmd, "", "go.renameStderr", "go.renameExit")
+        messenger:Message("Renaming...")
+    end
 end
 
+function renameStderr(err)
+    messenger:Error(err)
+end
+
+function renameExit()
+    CurView():ReOpen()
+    messenger:Message("Done")
+end
 
 function goimports()
     CurView():Save(false)
@@ -73,3 +87,4 @@ end
 
 AddRuntimeFile("go", "help", "help/go-plugin.md")
 BindKey("F6", "go.gorename")
+MakeCommand("gorename", "go.gorenameCmd", 0)
