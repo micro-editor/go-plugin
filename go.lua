@@ -9,6 +9,7 @@ end
 
 MakeCommand("goimports", "go.goimports", 0)
 MakeCommand("gofmt", "go.gofmt", 0)
+MakeCommand("gorename", "go.gorename", 0)
 
 function onViewOpen(view)
     if view.Buf:FileType() == "go" then
@@ -35,6 +36,23 @@ function gofmt()
     CurView():ReOpen()
 end
 
+function gorename()
+    CurView():Save(false)
+    local v = CurView()
+    local c = v.Cursor
+    local buf = v.Buf
+    local loc = Loc(c.X, c.Y)
+    local offset = ByteOffset(loc, buf)
+    local res = messenger:Prompt("Rename to:", "", 0)
+    local handle = io.popen("gorename --offset " .. CurView().Buf.Path .. ":#" .. tostring(offset) .. " --to " .. res)
+
+    local result = handle:read("*a")
+    handle:close()
+
+    CurView():ReOpen()
+end
+
+
 function goimports()
     CurView():Save(false)
     local handle = io.popen("goimports -w " .. CurView().Buf.Path)
@@ -54,3 +72,4 @@ function split(str, sep)
 end
 
 AddRuntimeFile("go", "help", "help/go-plugin.md")
+BindKey("F6", "go.gorename")
