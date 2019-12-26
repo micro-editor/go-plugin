@@ -1,90 +1,81 @@
-VERSION = "1.0.1"
+local micro = import("micro")
+local config = import("micro/config")
+local shell = import("micro/shell")
+local buffer = import("micro/buffer")
 
-if GetOption("goimports") == nil then
-    AddOption("goimports", false)
+function init()
+    config.RegisterCommonOption("goimports", false)
+    config.RegisterCommonOption("gofmt", true)
+
+    config.MakeCommand("goimports", "go.goimports", config.NoComplete)
+    config.MakeCommand("gofmt", "go.gofmt", config.NoComplete)
+    config.MakeCommand("gorename", "go.gorename", config.NoComplete)
+
+    config.AddRuntimeFile("go-plugin", config.RTHelp, "help/go-plugin.md")
+    config.TryBindKey("F6", "command-edit:gorename ", false)
+    config.MakeCommand("gorename", "go.gorenameCmd", config.NoComplete)
 end
-if GetOption("gofmt") == nil then
-    AddOption("gofmt", true)
-end
 
-MakeCommand("goimports", "go.goimports", 0)
-MakeCommand("gofmt", "go.gofmt", 0)
-MakeCommand("gorename", "go.gorename", 0)
-
-function onViewOpen(view)
-    if view.Buf:FileType() == "go" then
-        SetLocalOption("tabstospaces", "off", view)
-    end
-end
-
-function onSave(view)
-    if CurView().Buf:FileType() == "go" then
-        if GetOption("goimports") then
-            goimports()
-        elseif GetOption("gofmt") then
-            gofmt()
+function onSave(bp)
+    if bp.Buf:FileType() == "go" then
+        if bp.Buf.Settings["goimports"] then
+            goimports(bp)
+        elseif bp.Buf.Settings["gofmt"] then
+            gofmt(bp)
         end
     end
+    return false
 end
 
-function gofmt()
-    CurView():Save(false)
-    local handle = io.popen("gofmt -w " .. CurView().Buf.Path)
-    local result = handle:read("*a")
-    handle:close()
-
-    CurView():ReOpen()
-end
-
-function gorename()
-    local res, canceled = messenger:Prompt("Rename to:", "", 0)
-    if not canceled then
-        gorenameCmd(res)
-        CurView():Save(false)
+function gofmt(bp)
+    bp:Save()
+    local _, err = shell.RunCommand("gofmt -w " .. bp.Buf.Path)
+    if err ~= nil then
+        micro.InfoBar():Error(err)
+        return
     end
+
+    bp.Buf:ReOpen()
 end
 
-function gorenameCmd(res)
-    CurView():Save(false)
-    local v = CurView()
-    local c = v.Cursor
-    local buf = v.Buf
-    local loc = Loc(c.X, c.Y)
-    local offset = ByteOffset(loc, buf)
-    if #res > 0 then
-        local cmd = "gorename --offset " .. CurView().Buf.Path .. ":#" .. tostring(offset) .. " --to " .. res
-        JobStart(cmd, "", "go.renameStderr", "go.renameExit")
-        messenger:Message("Renaming...")
+function gorenameCmd(bp, args)
+    micro.Log(args)
+    if #args == 0 then
+        micro.InfoBar():Message("Not enough arguments")
+    else
+        bp:Save()
+        local buf = bp.Buf
+        if #args == 1 then
+            local c = bp.Cursor
+            local loc = buffer.Loc(c.X, c.Y)
+            local offset = buffer.ByteOffset(loc, buf)
+            local cmdargs = {"--offset", buf.Path .. ":#" .. tostring(offset), "--to", args[1]}
+            shell.JobSpawn("gorename", cmdargs, "", "go.renameStderr", "go.renameExit", bp)
+        else
+            local cmdargs = {"--from", args[1], "--to", args[2]}
+            shell.JobSpawn("gorename", cmdargs, "", "go.renameStderr", "go.renameExit", bp)
+        end
+        micro.InfoBar():Message("Renaming...")
     end
 end
 
 function renameStderr(err)
-    messenger:Error(err)
+    micro.Log(err)
+    micro.InfoBar():Message(err)
 end
 
-function renameExit()
-    CurView():ReOpen()
-    messenger:Message("Done")
+function renameExit(output, args)
+    local bp = args[1]
+    bp.Buf:ReOpen()
 end
 
-function goimports()
-    CurView():Save(false)
-    local handle = io.popen("goimports -w " .. CurView().Buf.Path)
-    local result = split(handle:read("*a"), ":")
-    handle:close()
-
-    CurView():ReOpen()
-end
-
-function split(str, sep)
-    local result = {}
-    local regex = ("([^%s]+)"):format(sep)
-    for each in str:gmatch(regex) do
-        table.insert(result, each)
+function goimports(bp)
+    bp:Save()
+    local _, err = shell.RunCommand("goimports -w " .. bp.Buf.Path)
+    if err ~= nil then
+        micro.InfoBar():Error(err)
+        return
     end
-    return result
-end
 
-AddRuntimeFile("go", "help", "help/go-plugin.md")
-BindKey("F6", "go.gorename")
-MakeCommand("gorename", "go.gorenameCmd", 0)
+    bp.Buf:ReOpen()
+end

@@ -1,8 +1,10 @@
 # Go Plugin for Micro
 
-This repository holds the Go plugin for micro.
+This repository holds the Go plugin for micro. This plugin
+has been updated for use with micro 2.0.
 
-Install with `> plugin install go`. This plugin will let you
-automatically run `gofmt` and `goimports` from within micro.
+Install by cloning this into your plug directory:
 
-Use `> gorename newName` or F6 to use gorename.
+```
+git clone https://github.com/micro-editor/go-plugin ~/.config/micro/plug
+```
