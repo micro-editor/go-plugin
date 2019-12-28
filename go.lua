@@ -11,7 +11,7 @@ function init()
     config.MakeCommand("gofmt", "go.gofmt", config.NoComplete)
     config.MakeCommand("gorename", "go.gorename", config.NoComplete)
 
-    config.AddRuntimeFile("go-plugin", config.RTHelp, "help/go-plugin.md")
+    config.AddRuntimeFile("go", config.RTHelp, "help/go-plugin.md")
     config.TryBindKey("F6", "command-edit:gorename ", false)
     config.MakeCommand("gorename", "go.gorenameCmd", config.NoComplete)
 end
