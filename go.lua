@@ -1,3 +1,5 @@
+VERSION = "2.0.0"
+
 local micro = import("micro")
 local config = import("micro/config")
 local shell = import("micro/shell")
@@ -24,7 +26,7 @@ function onSave(bp)
             gofmt(bp)
         end
     end
-    return false
+    return true
 end
 
 function gofmt(bp)
