@@ -5,6 +5,13 @@
   "Website": "https://github.com/micro-editor/go-plugin",
   "Versions": [
     {
+      "Version": "2.0.1",
+      "Url": "https://github.com/micro-editor/go-plugin/archive/v2.0.1.zip",
+      "Require": {
+        "micro": ">=2.0.0-1"
+      }
+    },
+    {
       "Version": "2.0.0",
       "Url": "https://github.com/micro-editor/go-plugin/archive/v2.0.0.zip",
       "Require": {

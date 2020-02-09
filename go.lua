@@ -6,16 +6,15 @@ local shell = import("micro/shell")
 local buffer = import("micro/buffer")
 
 function init()
-    config.RegisterCommonOption("goimports", false)
-    config.RegisterCommonOption("gofmt", true)
+    config.RegisterCommonOption("go", "goimports", false)
+    config.RegisterCommonOption("go", "gofmt", true)
 
-    config.MakeCommand("goimports", "go.goimports", config.NoComplete)
-    config.MakeCommand("gofmt", "go.gofmt", config.NoComplete)
-    config.MakeCommand("gorename", "go.gorename", config.NoComplete)
+    config.MakeCommand("goimports", goimports, config.NoComplete)
+    config.MakeCommand("gofmt", gofmt, config.NoComplete)
+    config.MakeCommand("gorename", gorenameCmd, config.NoComplete)
 
     config.AddRuntimeFile("go", config.RTHelp, "help/go-plugin.md")
     config.TryBindKey("F6", "command-edit:gorename ", false)
-    config.MakeCommand("gorename", "go.gorenameCmd", config.NoComplete)
 end
 
 function onSave(bp)
@@ -52,10 +51,10 @@ function gorenameCmd(bp, args)
             local loc = buffer.Loc(c.X, c.Y)
             local offset = buffer.ByteOffset(loc, buf)
             local cmdargs = {"--offset", buf.Path .. ":#" .. tostring(offset), "--to", args[1]}
-            shell.JobSpawn("gorename", cmdargs, "", "go.renameStderr", "go.renameExit", bp)
+            shell.JobSpawn("gorename", cmdargs, nil, renameStderr, renameExit, bp)
         else
             local cmdargs = {"--from", args[1], "--to", args[2]}
-            shell.JobSpawn("gorename", cmdargs, "", "go.renameStderr", "go.renameExit", bp)
+            shell.JobSpawn("gorename", cmdargs, nil, renameStderr, renameExit, bp)
         end
         micro.InfoBar():Message("Renaming...")
     end
