@@ -5,10 +5,12 @@ local config = import("micro/config")
 local shell = import("micro/shell")
 local buffer = import("micro/buffer")
 
-function init()
-    config.RegisterCommonOption("go", "goimports", false)
-    config.RegisterCommonOption("go", "gofmt", true)
+-- outside init because we want these options to take effect before
+-- buffers are initialized
+config.RegisterCommonOption("go", "goimports", false)
+config.RegisterCommonOption("go", "gofmt", true)
 
+function init()
     config.MakeCommand("goimports", goimports, config.NoComplete)
     config.MakeCommand("gofmt", gofmt, config.NoComplete)
     config.MakeCommand("gorename", gorenameCmd, config.NoComplete)
@@ -19,9 +21,9 @@ end
 
 function onSave(bp)
     if bp.Buf:FileType() == "go" then
-        if bp.Buf.Settings["goimports"] then
+        if bp.Buf.Settings["go.goimports"] then
             goimports(bp)
-        elseif bp.Buf.Settings["gofmt"] then
+        elseif bp.Buf.Settings["go.gofmt"] then
             gofmt(bp)
         end
     end
